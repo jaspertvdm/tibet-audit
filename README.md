@@ -7,6 +7,8 @@
 
 **Compliance Health Scanner** - Like [Lynis](https://cisofy.com/lynis/), but for regulations.
 
+**45 checks** across **10 frameworks** covering GDPR, AI Act, PIPA, APPI, PDPA, LGPD, Gulf PDPL, NDPR, and more.
+
 Get a compliance health score in seconds:
 
 ```bash
@@ -195,6 +197,90 @@ tibet-audit scan --cry
 | APPI-004 | Pseudonymization Support | MEDIUM | ❌ |
 | APPI-005 | Opt-Out Mechanism | HIGH | ❌ |
 
+### 🇸🇬 Singapore PDPA Compliance
+
+| Check ID | Name | Severity | Auto-Fix |
+|----------|------|----------|----------|
+| PDPA-001 | Consent Obligation | HIGH | ❌ |
+| PDPA-002 | Data Protection Officer | HIGH | ✅ |
+| PDPA-003 | 3-Day Breach Notification | CRITICAL | ✅ |
+| PDPA-004 | Do Not Call Compliance | MEDIUM | ❌ |
+| PDPA-005 | Data Retention Limitation | HIGH | ❌ |
+
+### 🇦🇺 Australia Privacy Act Compliance
+
+| Check ID | Name | Severity | Auto-Fix |
+|----------|------|----------|----------|
+| AUPA-001 | Privacy Policy (APP 1) | HIGH | ✅ |
+| AUPA-002 | Notifiable Data Breach | CRITICAL | ✅ |
+| AUPA-003 | Cross-Border Disclosure | HIGH | ❌ |
+| AUPA-004 | Data Security (APP 11) | HIGH | ❌ |
+| AUPA-005 | Access & Correction Rights | HIGH | ❌ |
+
+### 🇧🇷 Brazil LGPD Compliance
+
+| Check ID | Name | Severity | Auto-Fix |
+|----------|------|----------|----------|
+| LGPD-001 | Legal Basis for Processing | HIGH | ❌ |
+| LGPD-002 | Encarregado (DPO) | HIGH | ✅ |
+| LGPD-003 | Data Subject Rights (ARCO) | HIGH | ❌ |
+| LGPD-004 | Breach Notification | CRITICAL | ✅ |
+
+### 🇸🇦🇦🇪 Gulf PDPL Compliance (Saudi Arabia, UAE)
+
+| Check ID | Name | Severity | Auto-Fix |
+|----------|------|----------|----------|
+| GULF-001 | Data Localization | CRITICAL | ❌ |
+| GULF-002 | Explicit Consent | HIGH | ❌ |
+| GULF-003 | Breach Notification | CRITICAL | ✅ |
+| GULF-004 | Sensitive Data Protection | HIGH | ❌ |
+
+**Note:** Gulf region has strict data localization requirements - data often must stay in-region!
+
+### 🇳🇬 Nigeria NDPR Compliance
+
+| Check ID | Name | Severity | Auto-Fix |
+|----------|------|----------|----------|
+| NDPR-001 | Consent Requirement | HIGH | ❌ |
+| NDPR-002 | Data Protection Officer | HIGH | ❌ |
+| NDPR-003 | 72-Hour Breach Notification | CRITICAL | ✅ |
+| NDPR-004 | Annual Audit Compliance | HIGH | ✅ |
+
+**Note:** NDPR uniquely requires annual data protection audits filed with NITDA!
+
+### 🐧 Penguin Act (Antarctica)
+
+*For McMurdo Station and beyond...*
+
+| Check ID | Name | Severity | Auto-Fix |
+|----------|------|----------|----------|
+| PENG-001 | Penguin Data Sovereignty | HIGH | ❌ |
+| PENG-002 | Ice Age Data Retention | LOW | ❌ |
+| PENG-003 | Blizzard Resilience | MEDIUM | ❌ |
+| PENG-004 | Krill Consent Framework | LOW | ✅ |
+| PENG-005 | Aurora Australis Logging | INFO | ❌ |
+
+*Easter egg for our Antarctic friends. 🐧*
+
+---
+
+## Global Coverage Summary
+
+**45 checks** across **10 compliance frameworks** covering **all inhabited continents**:
+
+| Region | Framework | Checks | Key Feature |
+|--------|-----------|--------|-------------|
+| 🇪🇺 Europe | GDPR | 5 | 72-hour breach notification |
+| 🇪🇺 Europe | AI Act | 4 | AI decision audit trails |
+| 🇰🇷 South Korea | PIPA | 4 | **24-hour** breach notification |
+| 🇯🇵 Japan | APPI | 5 | Pseudonymization support |
+| 🇸🇬 Singapore | PDPA | 5 | Do Not Call registry |
+| 🇦🇺 Australia | Privacy Act | 5 | Notifiable Data Breach scheme |
+| 🇧🇷 Brazil | LGPD | 4 | ARCO data subject rights |
+| 🇸🇦🇦🇪 Gulf | PDPL | 4 | Data localization |
+| 🇳🇬 Nigeria | NDPR | 4 | Annual audit requirement |
+| 🐧 Antarctica | Penguin Act | 5 | Waddle consent |
+
 ---
 
 ## Scoring
@@ -264,7 +350,7 @@ TIBET Audit is designed for:
 
 ## Contributing
 
-Found a bug? Want to add a check for HIPAA, SOX, or ISO 27001?
+Found a bug? Want to add checks for HIPAA, SOX, ISO 27001, or another framework?
 
 1. Fork the repo
 2. Add your check in `tibet_audit/checks/`
