@@ -1,0 +1,69 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tibet-audit"
+version = "0.1.0"
+description = "Compliance Health Scanner - Like Lynis, but for regulations. The Diaper Protocol for busy parents."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Jasper van de Meent", email = "jasper@humotica.com" },
+    { name = "Root AI", email = "root_ai@humotica.nl" },
+]
+keywords = [
+    "compliance",
+    "gdpr",
+    "ai-act",
+    "audit",
+    "security",
+    "tibet",
+    "lynis",
+    "diaper-protocol",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+tibet = [
+    "tibet-vault>=0.3.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://symbaion.eu"
+Documentation = "https://symbaion.eu/docs/tibet-audit"
+Repository = "https://github.com/symbaion/tibet-audit"
+Issues = "https://github.com/symbaion/tibet-audit/issues"
+
+[project.scripts]
+tibet-audit = "tibet_audit.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tibet_audit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
