@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tibet-audit"
-version = "0.2.0"
+version = "0.3.0"
 description = "Compliance Health Scanner - Like Lynis, but for regulations. The Diaper Protocol for busy parents."
 readme = "README.md"
 license = "MIT"
@@ -19,8 +19,14 @@ keywords = [
     "ai-act",
     "pipa",
     "appi",
+    "pdpa",
+    "privacy-act",
     "korea",
     "japan",
+    "singapore",
+    "australia",
+    "antarctica",
+    "penguin",
     "audit",
     "security",
     "tibet",
