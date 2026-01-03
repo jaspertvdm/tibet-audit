@@ -49,7 +49,7 @@ $ tibet-audit call-mama --webhook https://slack.webhook.url
 | `--wet-wipe` | Preview fixes (dry-run) | Before changing anything |
 | `--auto` | Fix everything automatically | 3 AM, one hand on baby |
 | `--cry` | Verbose mode, all details | When everything is on fire |
-| `--call-mama` | Send report for external help | When the diaper is too dirty |
+| `--call-mama` | Call M.A.M.A. (Mission Assurance & Monitoring Agent) | When the diaper is too dirty |
 
 **Why "Diaper Protocol"?**
 
@@ -65,7 +65,9 @@ Because sometimes you just need to see EVERYTHING. All the passed checks, all th
 
 **Why "--call-mama"?**
 
-Because when the diaper is too dirty to handle alone, you call for backup. Send the compliance report to your team, your Slack channel, or your compliance officer.
+M.A.M.A. = **Mission Assurance & Monitoring Agent**
+
+Because when the diaper is too dirty to handle alone, you call for backup. M.A.M.A. generates a full compliance report and sends it to your team, your Slack channel, or your compliance officer. When things get serious, you need the big guns.
 
 ---
 
