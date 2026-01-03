@@ -174,6 +174,27 @@ tibet-audit scan --cry
 | AIACT-003 | AI Transparency | HIGH | ❌ |
 | AIACT-004 | AI Risk Assessment | HIGH | ✅ |
 
+### 🇰🇷 South Korea PIPA Compliance
+
+| Check ID | Name | Severity | Auto-Fix |
+|----------|------|----------|----------|
+| PIPA-001 | Privacy Officer Designation | CRITICAL | ✅ |
+| PIPA-002 | 24-Hour Breach Notification | CRITICAL | ✅ |
+| PIPA-003 | Explicit Consent (Opt-in) | HIGH | ❌ |
+| PIPA-004 | Cross-Border Transfer Docs | HIGH | ❌ |
+
+**Note:** PIPA is often stricter than GDPR - 24-hour breach notification vs 72 hours!
+
+### 🇯🇵 Japan APPI Compliance
+
+| Check ID | Name | Severity | Auto-Fix |
+|----------|------|----------|----------|
+| APPI-001 | Privacy Policy (APPI) | HIGH | ✅ |
+| APPI-002 | Data Handling Records | HIGH | ✅ |
+| APPI-003 | Cross-Border Transfer Rules | HIGH | ❌ |
+| APPI-004 | Pseudonymization Support | MEDIUM | ❌ |
+| APPI-005 | Opt-Out Mechanism | HIGH | ❌ |
+
 ---
 
 ## Scoring
