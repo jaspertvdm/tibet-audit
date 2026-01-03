@@ -269,24 +269,31 @@ def list_checks(
     console.print(f"\n[dim]Total: {len(ALL_CHECKS)} checks[/]")
 
 
+# Default M.A.M.A. endpoint
+MAMA_DEFAULT_EMAIL = "mama@humotica.com"  # Forwards to support team
+
+
 @app.command("call-mama")
 def call_mama(
     path: str = typer.Argument(".", help="Path to scan"),
-    email: Optional[str] = typer.Option(None, "--email", "-e", help="Send report to this email"),
+    email: Optional[str] = typer.Option(None, "--email", "-e", help=f"Send report to email (default: {MAMA_DEFAULT_EMAIL})"),
     webhook: Optional[str] = typer.Option(None, "--webhook", "-w", help="POST report to webhook URL"),
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Save report to file"),
+    send: bool = typer.Option(False, "--send", "-s", help=f"Actually send to {MAMA_DEFAULT_EMAIL}"),
 ):
     """
-    📞 Call Mama - Send compliance report for external help.
+    📞 Call M.A.M.A. - Mission Assurance & Monitoring Agent
 
     When the diaper is too dirty to handle alone, you call for backup.
     Generates a full compliance report and sends it to:
-    - Email (--email)
-    - Webhook (--webhook)
-    - File (--output)
+    - M.A.M.A. HQ (--send) - sends to SymbAIon support team
+    - Email (--email) - send to custom email
+    - Webhook (--webhook) - POST to Slack/Teams/custom
+    - File (--output) - save locally
 
     Examples:
-        tibet-audit call-mama --email compliance@company.com
+        tibet-audit call-mama --send              # Send to M.A.M.A. HQ
+        tibet-audit call-mama --email me@co.com   # Custom email
         tibet-audit call-mama --webhook https://slack.webhook.url
         tibet-audit call-mama --output report.json
     """
@@ -346,6 +353,27 @@ def call_mama(
     console.print()
 
     sent_to = []
+
+    # Send to M.A.M.A. HQ (SymbAIon support)
+    if send:
+        try:
+            import urllib.request
+            mama_endpoint = "https://brein.jaspervandemeent.nl/api/mama/report"
+            req = urllib.request.Request(
+                mama_endpoint,
+                data=report_json.encode('utf-8'),
+                headers={'Content-Type': 'application/json'},
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=15) as response:
+                if response.status in (200, 201, 202):
+                    console.print(f"[green]✅ Report sent to M.A.M.A. HQ ({MAMA_DEFAULT_EMAIL})[/]")
+                    sent_to.append("mama_hq")
+                else:
+                    console.print(f"[yellow]⚠️ M.A.M.A. HQ returned status {response.status}[/]")
+        except Exception as e:
+            console.print(f"[yellow]⚠️ Could not reach M.A.M.A. HQ: {e}[/]")
+            console.print(f"[dim]   Try --output to save locally instead[/]")
 
     # Send to email
     if email:
