@@ -31,6 +31,7 @@ except ImportError:
 
 from .scanner import TIBETAudit, ScanResult
 from .checks.base import Status, Severity
+from . import __version__
 
 app = typer.Typer(
     name="tibet-audit",
@@ -53,7 +54,7 @@ BANNER = """
 [bold blue]     ██║   ██║██████╔╝███████╗   ██║       ██║  ██║╚██████╔╝██████╔╝██║   ██║   [/]
 [bold blue]     ╚═╝   ╚═╝╚═════╝ ╚══════╝   ╚═╝       ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝   ╚═╝   [/]
 [bold blue]══════════════════════════════════════════════════════════════════════════════[/]
-[dim]  Compliance Health Scanner v0.1.0[/]
+[dim]  Compliance Health Scanner v{version}[/]
 [dim]  "SSL secures the connection. TIBET secures the timeline."[/]
 [bold blue]══════════════════════════════════════════════════════════════════════════════[/]
 """
@@ -101,7 +102,7 @@ def scan(
         console.print()
 
     if not quiet:
-        console.print(BANNER)
+        console.print(BANNER.format(version=__version__))
 
     # Parse categories
     cat_list = categories.split(",") if categories else None
@@ -152,7 +153,7 @@ def fix(
     if auto and not preview_only:
         console.print(DIAPER_BANNER)
     else:
-        console.print(BANNER)
+        console.print(BANNER.format(version=__version__))
 
     # First, scan
     with Progress(
@@ -233,7 +234,7 @@ def list_checks(
     category: Optional[str] = typer.Option(None, "--category", "-c", help="Filter by category"),
 ):
     """List all available compliance checks."""
-    console.print(BANNER)
+    console.print(BANNER.format(version=__version__))
 
     from .checks import ALL_CHECKS
 
