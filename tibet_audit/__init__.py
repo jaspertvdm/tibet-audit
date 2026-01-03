@@ -17,7 +17,7 @@ Website: https://symbaion.eu
 One love, one fAmIly!
 """
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 __author__ = "Jasper van de Meent & Root AI"
 __email__ = "team@humotica.com"
 
