@@ -31,7 +31,30 @@ except ImportError:
 
 from .scanner import TIBETAudit, ScanResult
 from .checks.base import Status, Severity
+from .runtime import RuntimeAudit
 from . import __version__
+
+try:
+    import requests
+    from packaging import version
+except ImportError:
+    # Optional dependencies for update checking
+    requests = None
+    version = None
+
+def check_for_updates():
+    """Checks PyPI for a newer version of tibet-audit in a humAIn way."""
+    if not requests or not version:
+        return
+    try:
+        response = requests.get("https://pypi.org/pypi/tibet-audit/json", timeout=1.5)
+        if response.status_code == 200:
+            latest_version = response.json()["info"]["version"]
+            if version.parse(latest_version) > version.parse(__version__):
+                console.print(f"\n[bold yellow][💡] Update beschikbaar: tibet-audit {latest_version}[/] [dim](huidig: {__version__})[/]")
+                console.print(f"    [blue]pip install --upgrade tibet-audit[/]\n")
+    except Exception:
+        pass # Silent fail to respect the user's focus
 
 app = typer.Typer(
     name="tibet-audit",
@@ -96,6 +119,9 @@ def scan(
         tibet-audit scan --categories gdpr,ai_act
         tibet-audit scan --cry              # When you need ALL the details
     """
+    if not quiet:
+        check_for_updates()
+
     if cry:
         console.print("[bold red]😭 CRY MODE ACTIVATED - Full verbose output[/]")
         console.print("[dim]   \"When everything is on fire, you need all the details.\"[/]")
@@ -121,6 +147,24 @@ def scan(
 
     # Display results
     _display_results(result, quiet, verbose=cry)
+
+    # Semantic summary (Runtime layer)
+    if not quiet:
+        import os
+        runtime = RuntimeAudit(
+            user_id=os.getenv("USER", "unknown"),
+            intent="compliance_scan"
+        )
+        semantic_summary = runtime.semantify({
+            "score": result.score,
+            "failed": result.failed,
+            "results": str(result.results)
+        })
+        console.print(f"\n[dim]{semantic_summary}[/]")
+
+        # Log TIBET token (placeholder for now)
+        tibet_token = runtime.secure_log({"score": result.score})
+        console.print(f"[dim]TIBET Audit Trail: {tibet_token[:40]}...[/]")
 
     # Upsell (only if not quiet)
     if not quiet:
