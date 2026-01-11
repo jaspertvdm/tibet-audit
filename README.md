@@ -106,6 +106,12 @@ tibet-audit scan --categories ai_act
 
 # Quiet mode (just the score)
 tibet-audit scan --quiet
+
+# Mercury (JIS + sovereignty)
+audit-tool scan --categories jis,sovereignty,provider
+
+# Signed handshake (opt-in)
+audit-tool scan --high-five
 ```
 
 ### Fix Issues
@@ -144,6 +150,19 @@ tibet-audit call-mama --output compliance-report.json
 
 # Print report to stdout
 tibet-audit call-mama
+```
+
+### Mercury Commands
+
+```bash
+# Compliance roadmap
+audit-tool roadmap ./my-ai-project
+
+# Value-based upgrade suggestions
+audit-tool upgrades ./my-ai-project
+
+# Compliance drift (JSON reports)
+audit-tool diff report_old.json report_new.json
 ```
 
 ### Cry Mode (Verbose)
@@ -325,7 +344,7 @@ tibet-audit scan
 
 ## For Enterprise
 
-Running compliance for a team? Check out [SymbAIon Enterprise](https://symbaion.eu/enterprise):
+Running compliance for a team? Check out [SymbAIon Enterprise](https://humotica.com/enterprise):
 
 - **Scheduled scans** across all repositories
 - **Compliance dashboard** with trend analysis
@@ -380,7 +399,7 @@ Built with 💙 by the [HumoticaOS](https://humotica.com) team:
 ---
 
 <p align="center">
-  <a href="https://symbaion.eu">
+  <a href="https://humotica.com">
     <img src="https://img.shields.io/badge/Powered%20by-SymbAIon-blue" alt="Powered by SymbAIon">
   </a>
 </p>

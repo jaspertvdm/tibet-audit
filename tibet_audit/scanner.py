@@ -75,6 +75,9 @@ class TIBETAudit:
 
             try:
                 result = check.run(context)
+                # Ensure category is set from the check class
+                if result.category is None:
+                    result.category = check.category
                 results.append(result)
             except Exception as e:
                 # Check failed to run - skip it
@@ -83,6 +86,7 @@ class TIBETAudit:
                     name=check.name,
                     status=Status.SKIPPED,
                     severity=check.severity,
+                    category=check.category,
                     message=f"Check failed to run: {str(e)}",
                     score_impact=0
                 ))

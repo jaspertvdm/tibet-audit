@@ -11,6 +11,10 @@ from .lgpd import LGPD_CHECKS          # Brazil
 from .gulf_pdpl import GULF_CHECKS     # Saudi Arabia, UAE, Gulf region
 from .ndpr import NDPR_CHECKS          # Nigeria
 from .penguin_act import PENGUIN_CHECKS  # Antarctica (Easter egg!)
+from .jis import JIS_CHECKS            # JIS compliance
+from .sovereignty import SOVEREIGNTY_CHECKS  # Sovereignty and residency
+from .provider_security import PROVIDER_SECURITY_CHECKS  # Provider security
+from .nis2 import NIS2_CHECKS            # EU NIS2 Directive
 
 # All available checks - Global Coverage!
 ALL_CHECKS = []
@@ -24,5 +28,15 @@ ALL_CHECKS.extend(LGPD_CHECKS)         # 🇧🇷 Brazil
 ALL_CHECKS.extend(GULF_CHECKS)         # 🇸🇦🇦🇪 Gulf Region
 ALL_CHECKS.extend(NDPR_CHECKS)         # 🇳🇬 Nigeria
 ALL_CHECKS.extend(PENGUIN_CHECKS)      # 🐧 Antarctica
+ALL_CHECKS.extend(JIS_CHECKS)          # 🧭 JIS compliance
+ALL_CHECKS.extend(SOVEREIGNTY_CHECKS)  # 🛰 Sovereignty
+ALL_CHECKS.extend(PROVIDER_SECURITY_CHECKS)  # 🛡 Provider security
+ALL_CHECKS.extend(NIS2_CHECKS)            # 🇪🇺 NIS2 Directive
 
-__all__ = ["BaseCheck", "CheckResult", "Status", "Severity", "ALL_CHECKS"]
+# EU Compliance Pack - bundle for US companies targeting EU market
+EU_COMPLIANCE_CHECKS = []
+EU_COMPLIANCE_CHECKS.extend(GDPR_CHECKS)      # Privacy
+EU_COMPLIANCE_CHECKS.extend(AI_ACT_CHECKS)    # AI Regulation
+EU_COMPLIANCE_CHECKS.extend(NIS2_CHECKS)      # Cybersecurity
+
+__all__ = ["BaseCheck", "CheckResult", "Status", "Severity", "ALL_CHECKS", "EU_COMPLIANCE_CHECKS"]

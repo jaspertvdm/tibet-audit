@@ -12,12 +12,12 @@ The Diaper Protocol™: One command, hands free, compliance done.
 
 Authors: Jasper van de Meent & Root AI
 License: MIT
-Website: https://symbaion.eu
+Website: https://humotica.com
 
 One love, one fAmIly!
 """
 
-__version__ = "0.5.0"
+__version__ = "0.7.0"
 __author__ = "Jasper van de Meent & Root AI"
 __email__ = "team@humotica.com"
 

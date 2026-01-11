@@ -41,6 +41,7 @@ class CheckResult:
     status: Status
     severity: Severity
     message: str
+    category: Optional[str] = None
     recommendation: Optional[str] = None
     fix_action: Optional[FixAction] = None
     references: List[str] = field(default_factory=list)

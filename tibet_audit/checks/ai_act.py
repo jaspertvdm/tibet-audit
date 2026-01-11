@@ -66,7 +66,7 @@ class AIActDecisionLoggingCheck(BaseCheck):
                     requires_confirmation=True,
                     risk_level="low"
                 ),
-                references=["EU AI Act Article 12", "https://symbaion.eu/tibet"],
+                references=["EU AI Act Article 12", "https://humotica.com/tibet"],
                 score_impact=10
             )
 
@@ -85,7 +85,7 @@ class AIActDecisionLoggingCheck(BaseCheck):
             ),
             references=[
                 "EU AI Act Article 12 - Record-keeping",
-                "https://symbaion.eu/tibet"
+                "https://humotica.com/tibet"
             ],
             score_impact=self.score_weight
         )

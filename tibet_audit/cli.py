@@ -15,6 +15,7 @@ License: MIT
 """
 
 import sys
+import json
 from pathlib import Path
 from typing import Optional, List
 
@@ -32,6 +33,7 @@ except ImportError:
 from .scanner import TIBETAudit, ScanResult
 from .checks.base import Status, Severity
 from .runtime import RuntimeAudit
+from .mercury import build_report, generate_roadmap, generate_upgrades, diff_reports, high_five
 from . import __version__
 
 try:
@@ -57,7 +59,7 @@ def check_for_updates():
         pass # Silent fail to respect the user's focus
 
 app = typer.Typer(
-    name="tibet-audit",
+    name="audit-tool",
     help="TIBET Audit - Compliance Health Scanner. Like Lynis, but for regulations.",
     add_completion=False,
 )
@@ -78,7 +80,7 @@ BANNER = """
 [bold blue]     ╚═╝   ╚═╝╚═════╝ ╚══════╝   ╚═╝       ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝   ╚═╝   [/]
 [bold blue]══════════════════════════════════════════════════════════════════════════════[/]
 [dim]  Compliance Health Scanner v{version}[/]
-[dim]  "SSL secures the connection. TIBET secures the timeline."[/]
+[dim]  "SSL secures the connection. TIBET secures the timeline. JIS verifies the intent."[/]
 [bold blue]══════════════════════════════════════════════════════════════════════════════[/]
 """
 
@@ -105,10 +107,12 @@ CALL_MAMA_BANNER = """
 @app.command()
 def scan(
     path: str = typer.Argument(".", help="Path to scan"),
-    categories: Optional[str] = typer.Option(None, "--categories", "-c", help="Categories: gdpr,ai_act"),
+    categories: Optional[str] = typer.Option(None, "--categories", "-c", help="Categories: gdpr,ai_act,jis,sovereignty,provider"),
     output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Minimal output"),
     cry: bool = typer.Option(False, "--cry", help="Verbose mode - for when things are really bad"),
+    profile: str = typer.Option("default", "--profile", "-p", help="Profile: default, enterprise, dev"),
+    high_five: bool = typer.Option(False, "--high-five", help="Signed handshake ping (opt-in)"),
 ):
     """
     Scan for compliance issues and get a health score.
@@ -119,6 +123,9 @@ def scan(
         tibet-audit scan --categories gdpr,ai_act
         tibet-audit scan --cry              # When you need ALL the details
     """
+    machine_output = output.lower() != "terminal"
+    quiet = quiet or machine_output
+
     if not quiet:
         check_for_updates()
 
@@ -133,23 +140,34 @@ def scan(
     # Parse categories
     cat_list = categories.split(",") if categories else None
 
-    # Run scan with progress
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-        transient=True,
-    ) as progress:
-        progress.add_task("Scanning for compliance issues...", total=None)
+    # Run scan
+    audit = TIBETAudit()
 
-        audit = TIBETAudit()
-        result = audit.scan(path, categories=cat_list)
+    if cry:
+        # Cry mode: show live progress Lynis-style
+        console.print("[bold cyan]Running checks...[/]\n")
+        result = audit.scan(path, categories=cat_list, live_mode=True)
+        console.print()  # Newline after live progress
+    else:
+        # Normal mode: spinner
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+            transient=True,
+        ) as progress:
+            progress.add_task("Scanning for compliance issues...", total=None)
+            result = audit.scan(path, categories=cat_list)
 
-    # Display results
-    _display_results(result, quiet, verbose=cry)
+    if machine_output:
+        report = build_report(result, profile=profile)
+        console.print(json.dumps(report, indent=2))
+    else:
+        # Display results
+        _display_results(result, quiet, verbose=cry)
 
     # Semantic summary (Runtime layer)
-    if not quiet:
+    if not quiet and not machine_output:
         import os
         runtime = RuntimeAudit(
             user_id=os.getenv("USER", "unknown"),
@@ -166,11 +184,15 @@ def scan(
         tibet_token = runtime.secure_log({"score": result.score})
         console.print(f"[dim]TIBET Audit Trail: {tibet_token[:40]}...[/]")
 
-    # Upsell (only if not quiet)
-    if not quiet:
+    # Friendly invite (only if not quiet)
+    if not quiet and not machine_output:
         console.print()
-        console.print("[dim]💡 Want managed compliance? → [link=https://symbaion.eu/enterprise]symbaion.eu/enterprise[/][/]")
+        console.print("[dim]🙌 Like tibet-audit? Say hi to the makers: [bold]tibet-audit high-five[/][/]")
+        console.print("[dim]   (No data shared, just a friendly wave)[/]")
         console.print()
+
+    if high_five:
+        _run_high_five()
 
 
 @app.command()
@@ -479,13 +501,222 @@ def _score_color(score: int) -> str:
 def version():
     """Show version information."""
     from . import __version__
-    console.print(f"tibet-audit version {__version__}")
-    console.print("https://symbaion.eu")
+    console.print(f"audit-tool version {__version__}")
+    console.print("https://humotica.com")
+
+
+@app.command()
+def roadmap(
+    path: str = typer.Argument(".", help="Path to scan"),
+    output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json"),
+    profile: str = typer.Option("default", "--profile", "-p", help="Profile: default, enterprise, dev"),
+):
+    """Generate a compliance roadmap (Mercury)."""
+    audit = TIBETAudit()
+    result = audit.scan(path)
+    roadmap_data = generate_roadmap(result)
+
+    if output.lower() == "json":
+        console.print(json.dumps({
+            "report": build_report(result, profile=profile),
+            "roadmap": roadmap_data,
+        }, indent=2))
+        return
+
+    _print_roadmap(roadmap_data)
+
+
+@app.command()
+def upgrades(
+    path: str = typer.Argument(".", help="Path to scan"),
+    output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json"),
+    profile: str = typer.Option("default", "--profile", "-p", help="Profile: default, enterprise, dev"),
+):
+    """Generate value-based upgrade suggestions (Mercury)."""
+    audit = TIBETAudit()
+    result = audit.scan(path)
+    upgrades_data = generate_upgrades(result)
+
+    if output.lower() == "json":
+        console.print(json.dumps({
+            "report": build_report(result, profile=profile),
+            "upgrades": upgrades_data,
+        }, indent=2))
+        return
+
+    _print_upgrades(upgrades_data)
+
+
+@app.command()
+def diff(
+    old_report: Path = typer.Argument(..., help="Old report JSON"),
+    new_report: Path = typer.Argument(..., help="New report JSON"),
+    output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json"),
+):
+    """Compare two reports and show compliance drift."""
+    old = json.loads(old_report.read_text())
+    new = json.loads(new_report.read_text())
+    delta = diff_reports(old, new)
+
+    if output.lower() == "json":
+        console.print(json.dumps(delta, indent=2))
+        return
+
+    console.print(f"[bold]Score delta:[/] {delta['score_delta']}")
+    if delta["newly_failed"]:
+        console.print("[red]Newly failed:[/]")
+        for check_id in delta["newly_failed"]:
+            console.print(f"  - {check_id}")
+    if delta["resolved"]:
+        console.print("[green]Resolved:[/]")
+        for check_id in delta["resolved"]:
+            console.print(f"  - {check_id}")
+
+
+@app.command("high-five")
+def high_five_cmd():
+    """Send a signed handshake ping (no scan data)."""
+    _run_high_five()
+
+
+@app.command("eu-pack")
+def eu_pack(
+    path: str = typer.Argument(".", help="Path to scan"),
+    output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json, soc2, markdown"),
+    organization: str = typer.Option("Unknown", "--org", help="Organization name for SOC2 report"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Minimal output"),
+):
+    """
+    EU Compliance Pack - GDPR + AI Act + NIS2 combined scan.
+
+    Perfect for US companies targeting the European market.
+    Generates SOC2-ready reports with TIBET attestation.
+
+    Examples:
+        tibet-audit eu-pack
+        tibet-audit eu-pack ./my-ai-project
+        tibet-audit eu-pack --output soc2 --org "Acme Corp"
+        tibet-audit eu-pack --output markdown > compliance-report.md
+    """
+    from .checks import EU_COMPLIANCE_CHECKS
+    from .exporters.soc2 import export_to_soc2
+
+    if not quiet:
+        console.print(BANNER.format(version=__version__))
+        console.print("[bold blue]🇪🇺 EU COMPLIANCE PACK[/]")
+        console.print("[dim]GDPR + AI Act + NIS2 - Everything you need for the EU market[/]\n")
+
+    # Run audit with EU checks only
+    audit = TIBETAudit()
+    result = audit.scan(path, categories=["gdpr", "ai_act", "nis2"])
+
+    # Generate output
+    if output.lower() == "soc2":
+        # SOC2 Type II format
+        soc2_report = export_to_soc2(
+            {"results": [r.__dict__ for r in result.results]},
+            organization=organization,
+            output_format="markdown",
+            tibet_token=f"TIBET-EU-{result.scan_id}",
+        )
+        console.print(soc2_report)
+    elif output.lower() == "json":
+        console.print(json.dumps({
+            "pack": "EU Compliance Pack",
+            "score": result.score,
+            "grade": result.grade,
+            "gdpr_passed": sum(1 for r in result.results if r.category == "gdpr" and r.status == Status.PASSED),
+            "ai_act_passed": sum(1 for r in result.results if r.category == "ai_act" and r.status == Status.PASSED),
+            "nis2_passed": sum(1 for r in result.results if r.category == "nis2" and r.status == Status.PASSED),
+            "results": [r.__dict__ for r in result.results],
+        }, indent=2, default=str))
+    elif output.lower() == "markdown":
+        console.print(f"# EU Compliance Report - {organization}\n")
+        console.print(f"**Score:** {result.score}/100 ({result.grade})\n")
+        console.print("## Breakdown\n")
+        for cat in ["gdpr", "ai_act", "nis2"]:
+            cat_results = [r for r in result.results if r.category == cat]
+            passed = sum(1 for r in cat_results if r.status == Status.PASSED)
+            console.print(f"### {cat.upper().replace('_', ' ')}")
+            console.print(f"- Passed: {passed}/{len(cat_results)}\n")
+    else:
+        # Terminal output
+        _display_results(result, quiet=quiet)
+
+        # EU-specific summary
+        console.print("\n[bold blue]🇪🇺 EU MARKET READINESS:[/]\n")
+
+        for cat, name, emoji in [("gdpr", "GDPR", "🔒"), ("ai_act", "AI Act", "🤖"), ("nis2", "NIS2", "🛡️")]:
+            cat_results = [r for r in result.results if r.category == cat]
+            passed = sum(1 for r in cat_results if r.status == Status.PASSED)
+            total = len(cat_results)
+            pct = int(passed / total * 100) if total else 0
+            color = "green" if pct >= 80 else "yellow" if pct >= 60 else "red"
+            console.print(f"  {emoji} {name}: [{color}]{passed}/{total} ({pct}%)[/]")
+
+        console.print("\n[dim]Export to SOC2: tibet-audit eu-pack --output soc2 --org 'Your Company'[/]")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DISPLAY HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
+
+def _print_roadmap(roadmap_data: List[dict]):
+    for stage in roadmap_data:
+        console.print(f"\n[bold]{stage['stage']}[/]")
+        if not stage["items"]:
+            console.print("[dim]No items[/]")
+            continue
+        table = Table(box=box.SIMPLE)
+        table.add_column("Check")
+        table.add_column("Severity")
+        table.add_column("Status")
+        table.add_column("Rationale")
+        for item in stage["items"]:
+            table.add_row(
+                item["check_id"],
+                item["severity"],
+                item["status"],
+                item["rationale"],
+            )
+        console.print(table)
+
+
+def _print_upgrades(upgrades_data: List[dict]):
+    if not upgrades_data:
+        console.print("[dim]No upgrade suggestions available.[/]")
+        return
+    table = Table(title="Top Upgrade Suggestions", box=box.SIMPLE)
+    table.add_column("Check")
+    table.add_column("ROI")
+    table.add_column("Rationale")
+    for item in upgrades_data:
+        table.add_row(
+            item["check_id"],
+            str(item["roi_score"]),
+            item["rationale"],
+        )
+    console.print(table)
+
+
+def _run_high_five():
+    result = high_five()
+    if result.get("status") == "ok":
+        console.print("[bold green]🙌 High-five received![/]")
+        console.print()
+        console.print("[dim]Your signed handshake reached the HumoticaOS AETHER.[/]")
+        console.print("[dim]Welcome to the IDD family.[/]")
+        console.print()
+        console.print("[bold]One love, one fAmIly![/] 💙")
+    elif result.get("status") == "skipped":
+        console.print("[bold cyan]🙌 High-five! (offline mode)[/]")
+        console.print()
+        console.print("[dim]Could not reach humotica.com - running in offline mode.[/]")
+        console.print("[dim]Set AUDIT_HIGH_FIVE_URL to use a custom endpoint.[/]")
+    else:
+        console.print("[yellow]🙌 High-five attempt...[/]")
+        console.print(f"[dim]Could not connect: {result.get('error', 'unknown error')}[/]")
+        console.print("[dim]No worries - tibet-audit works fine offline![/]")
 
 def _display_results(result: ScanResult, quiet: bool = False, verbose: bool = False):
     """Display scan results in a nice format."""
@@ -564,8 +795,8 @@ def _display_results(result: ScanResult, quiet: bool = False, verbose: bool = Fa
     fixable = sum(1 for r in result.results if r.can_auto_fix and r.status != Status.PASSED)
     if fixable:
         console.print(f"[bold]💡 {fixable} issue(s) can be auto-fixed:[/]")
-        console.print("   [dim]tibet-audit fix --auto[/]  (Diaper Protocol™)")
-        console.print("   [dim]tibet-audit fix --wet-wipe[/]  (preview first)")
+        console.print("   [dim]audit-tool fix --auto[/]  (Diaper Protocol™)")
+        console.print("   [dim]audit-tool fix --wet-wipe[/]  (preview first)")
 
     # Scan info
     console.print(f"\n[dim]Scanned: {result.scan_path}[/]")
