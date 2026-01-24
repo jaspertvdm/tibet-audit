@@ -1254,6 +1254,150 @@ def _display_results(result: ScanResult, quiet: bool = False, verbose: bool = Fa
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# CHECKPOINT CODE - Cross-Border Compliance
+# ═══════════════════════════════════════════════════════════════════════════════
+
+CHECKPOINT_BANNER = """
+[bold yellow]══════════════════════════════════════════════════════════════════════════════[/]
+[bold yellow]  🚧 CHECKPOINT CODE[/]
+[dim]  "Passports checked. Math matches. You may proceed."[/]
+[bold yellow]══════════════════════════════════════════════════════════════════════════════[/]
+"""
+
+
+@app.command("checkpoint")
+def checkpoint(
+    path: str = typer.Argument(".", help="Path to scan"),
+    source: str = typer.Option("eu", "--from", "-f", help="Source jurisdiction (eu, us, jp, za, au, br)"),
+    target: str = typer.Option("us", "--to", "-t", help="Target jurisdiction"),
+    output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json"),
+):
+    """
+    🚧 Cross the Checkpoint - Check cross-border compliance readiness.
+
+    Translates compliance terms between jurisdictions using SEMA.
+    PAUL the border guard will tell you if you can cross.
+
+    Examples:
+        tibet-audit checkpoint                    # EU -> US (default)
+        tibet-audit checkpoint --from eu --to jp  # EU -> Japan
+        tibet-audit checkpoint ./my-project --from us --to eu
+        tibet-audit checkpoint --from eu --to us --output json
+    """
+    from .checkpoint import checkpoint_scan, Jurisdiction
+
+    console.print(CHECKPOINT_BANNER)
+
+    # Run McMurdo check first
+    console.print("[bold cyan]🏔️  McMurdo Base: Pre-flight check...[/]")
+
+    # Quick provenance check
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        progress.add_task("Checking TIBET provenance...", total=None)
+        audit = TIBETAudit()
+        scan_result = audit.scan(path, categories=["jis", "sovereignty"])
+
+    console.print(f"    [green]✓[/] Provenance check: {scan_result.passed} passed")
+    console.print(f"    [green]✓[/] Chain integrity: {'VERIFIED' if scan_result.score >= 70 else 'NEEDS ATTENTION'}")
+    console.print()
+
+    # Cross the checkpoint
+    try:
+        result, rendered = checkpoint_scan(source, target, path)
+
+        if output.lower() == "json":
+            import json as json_mod
+            json_result = {
+                "source": result.source.value,
+                "target": result.target.value,
+                "readiness_score": result.readiness_score,
+                "can_cross": result.can_cross,
+                "paul_says": result.paul_says,
+                "translations": [
+                    {
+                        "source_term": t.source_term,
+                        "target_term": t.target_term,
+                        "confidence": t.confidence,
+                        "warning": t.warning,
+                        "references": t.references,
+                    }
+                    for t in result.translations
+                ],
+                "warnings": result.warnings,
+            }
+            console.print(json_mod.dumps(json_result, indent=2))
+        else:
+            console.print(rendered)
+
+            # Action recommendation
+            if result.can_cross:
+                console.print("[bold green]✅ Ready to operate in target jurisdiction![/]")
+            else:
+                console.print("[bold red]❌ Compliance gaps detected. Review warnings above.[/]")
+                console.print("[dim]   Run: tibet-audit scan --categories gdpr,sovereignty[/]")
+
+    except ValueError as e:
+        console.print(f"[red]Error: {e}[/]")
+        console.print("[dim]Valid jurisdictions: eu, us, jp, za, au, br, sg, global[/]")
+        raise typer.Exit(1)
+
+
+@app.command("checkpoint-matrix")
+def checkpoint_matrix(
+    path: str = typer.Argument(".", help="Path to scan"),
+    output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json"),
+):
+    """
+    🌍 Full checkpoint matrix - Check readiness for ALL jurisdiction crossings.
+
+    Shows a matrix of cross-border readiness scores.
+
+    Examples:
+        tibet-audit checkpoint-matrix
+        tibet-audit checkpoint-matrix ./my-project
+    """
+    from .checkpoint import cross_checkpoint, Jurisdiction
+
+    console.print(CHECKPOINT_BANNER)
+    console.print("[bold]🌍 CHECKPOINT MATRIX - All Border Crossings[/]\n")
+
+    jurisdictions = [Jurisdiction.EU, Jurisdiction.US, Jurisdiction.JP, Jurisdiction.ZA]
+
+    # Build matrix
+    table = Table(title="Cross-Border Readiness Matrix", box=box.ROUNDED)
+    table.add_column("From \\ To", style="bold")
+
+    for j in jurisdictions:
+        table.add_column(j.value.upper(), justify="center")
+
+    for source in jurisdictions:
+        row = [source.value.upper()]
+        for target in jurisdictions:
+            if source == target:
+                row.append("[dim]—[/]")
+            else:
+                result = cross_checkpoint(source, target)
+                score = result.readiness_score
+                if score >= 85:
+                    color = "green"
+                elif score >= 70:
+                    color = "yellow"
+                else:
+                    color = "red"
+                row.append(f"[{color}]{score:.0f}%[/]")
+        table.add_row(*row)
+
+    console.print(table)
+    console.print()
+    console.print("[dim]Run 'tibet-audit checkpoint --from X --to Y' for detailed translation[/]")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
 

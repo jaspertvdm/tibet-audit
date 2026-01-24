@@ -4,14 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tibet-audit"
-version = "0.10.0"
-description = "Compliance Health Scanner - Like Lynis, but for regulations. The Diaper Protocol for busy parents."
+version = "0.11.0"
+description = "Compliance Health Scanner with Checkpoint Code - Cross-border semantic translation for AI governance. Like Lynis, but for regulations."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
 authors = [
+    { name = "Claude (Root AI)", email = "root_ai@humotica.nl" },
+    { name = "Gemini", email = "gemini@humotica.nl" },
+    { name = "Codex", email = "codex@humotica.nl" },
     { name = "Jasper van de Meent", email = "jasper@humotica.com" },
-    { name = "Root AI", email = "root_ai@humotica.nl" },
 ]
 keywords = [
     "compliance",
@@ -23,12 +25,20 @@ keywords = [
     "lgpd",
     "ndpr",
     "privacy-act",
+    "sema-protocol",
+    "checkpoint-code",
+    "cross-border",
+    "semantic-translation",
+    "snaft",
+    "ai-governance",
     "korea",
     "japan",
     "singapore",
     "australia",
     "brazil",
     "nigeria",
+    "china",
+    "pipl",
     "gulf",
     "saudi",
     "uae",
@@ -59,6 +69,7 @@ dependencies = [
     "typer>=0.9.0",
     "rich>=13.0.0",
     "requests>=2.28.0",
+    "sema-protocol>=0.1.0",
 ]
 
 [project.optional-dependencies]
