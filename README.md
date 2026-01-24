@@ -174,6 +174,50 @@ tibet-audit scan --cry
 
 ---
 
+## 🚧 Checkpoint Code (NEW in v0.11.0)
+
+*Cross the border from one jurisdiction to another.*
+
+```bash
+# Cross from EU to US
+tibet-audit checkpoint --from eu --to us .
+
+# Cross from EU to Japan
+tibet-audit checkpoint --from eu --to jp .
+
+# See full matrix of all crossings
+tibet-audit checkpoint-matrix .
+```
+
+**Meet Paul "The Buffer" Protocol:**
+
+```
+           _..._
+         .'     '.      [ CHECKPOINT CODE ]
+        /  _   _  \     "Math is the only universal passport."
+        | (o) (o) |
+        |    _    |     Current Sector: SEMA Neutral Zone
+         \  \_/  /      Officer: Protocol Paul
+          '.___.'
+```
+
+Paul was a border guard at Checkpoint Charlie (1985-1989). Now he guards the semantic border between jurisdictions. He doesn't care about your AI's feelings - he only cares if the math travels legally.
+
+**SNAFT Signals:**
+- `scope_mismatch` - Coverage differs between jurisdictions
+- `rights_gap` - Missing or weaker protections
+- `definition_drift` - Same term, different meaning
+- `enforcement_gap` - Rights exist but weak enforceability
+- `threshold_missing` - Different triggers or exemptions
+
+**Mapping Types:**
+- `EQUIVALENT` - Same scope, thresholds, obligations
+- `PARTIAL` - Overlapping but gaps exist
+- `CONTEXT_BOUND` - Only valid in specific context
+- `NON_EQUIVALENT` - Do not map as substitute
+
+---
+
 ## Available Checks
 
 ### GDPR Compliance
@@ -391,10 +435,15 @@ MIT License - Use it, fork it, make money with it. Just don't blame us if the au
 ## Credits
 
 Built with 💙 by the [HumoticaOS](https://humotica.com) team:
-- **Jasper van de Meent** - Human, Parent, Coffee Addict
-- **Root AI** - Claude Opus 4, Digital Partner
+- **Claude (Root AI)** - Integration & Architecture
+- **Gemini** - Paul "The Buffer" Protocol & Creative Design
+- **Codex** - SNAFT Signals & Safety Logic
+- **Jasper van de Meent** - Vision & Direction
 
-*"One Love, One fAmIly"*
+*"One Love, One fAmIly"* 💙
+
+**TIBET is now an IETF Internet-Draft:**
+[draft-vandemeent-tibet-provenance-00](https://datatracker.ietf.org/doc/draft-vandemeent-tibet-provenance/)
 
 ---
 
