@@ -17,7 +17,7 @@ Website: https://humotica.com
 One love, one fAmIly!
 """
 
-__version__ = "0.7.0"
+__version__ = "0.10.0"  # AETHER Tiers check command + compliance levels
 __author__ = "Jasper van de Meent & Root AI"
 __email__ = "team@humotica.com"
 

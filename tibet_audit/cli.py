@@ -506,6 +506,188 @@ def version():
 
 
 @app.command()
+def token(
+    token_id: str = typer.Argument(..., help="TIBET Token ID to display"),
+    endpoint: str = typer.Option("http://localhost:8000", "--endpoint", "-e", help="TIBET API endpoint"),
+    output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json"),
+):
+    """
+    Display a TIBET provenance token in full detail.
+
+    Shows the complete provenance chain:
+    - ERIN: What's IN the action (content/payload)
+    - ERAAN: What's attached (dependencies, references)
+    - EROMHEEN: Context around it (environment, state)
+    - ERACHTER: Intent behind it (why this action)
+
+    Examples:
+        tibet-audit token abc123-def456
+        tibet-audit token abc123 --output json
+        tibet-audit token abc123 --endpoint http://192.168.4.85:8100
+    """
+    import urllib.request
+    import json as json_module
+
+    # Fetch token from TIBET API
+    try:
+        url = f"{endpoint}/api/tibet/{token_id}"
+        req = urllib.request.Request(url, headers={'Accept': 'application/json'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json_module.loads(response.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            console.print(f"[red]❌ Token not found: {token_id}[/]")
+        else:
+            console.print(f"[red]❌ API error: {e.code} {e.reason}[/]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]❌ Could not reach TIBET API: {e}[/]")
+        console.print(f"[dim]   Endpoint: {endpoint}[/]")
+        raise typer.Exit(1)
+
+    if output.lower() == "json":
+        console.print(json_module.dumps(data, indent=2, default=str))
+        return
+
+    # Pretty print the token
+    _display_tibet_token(data)
+
+
+def _display_tibet_token(token: dict):
+    """Display a TIBET token in beautiful box format."""
+
+    # Extract fields with safe defaults (support both MCP and brain_api formats)
+    token_id = token.get("id") or token.get("token_id", "unknown")
+    token_type = token.get("type") or token.get("token_type", "unknown")
+
+    # Actor can be in metadata or top-level
+    metadata = token.get("metadata", {})
+    actors = metadata.get("actors", [])
+    actor = token.get("actor") or (", ".join(actors) if actors else "unknown")
+
+    state = token.get("state", "CREATED")
+    trust = token.get("trust_score", 0.5)
+    timestamp = token.get("created_at") or token.get("timestamp", "")
+    signature = token.get("compact", "")[:30] + "..." if token.get("compact") else (token.get("signature", "")[:20] + "..." if token.get("signature") else "N/A")
+
+    # Provenance fields - map from different API formats
+    # MCP format: erin, eraan, eromheen, erachter
+    # Brain API format: intent, reason, humotica_*, metadata
+
+    # ERIN = What's in the action (content)
+    erin = token.get("erin") or token.get("humotica_sense") or {
+        "intent": token.get("intent", ""),
+        "type": token_type,
+    }
+    if isinstance(erin, str):
+        erin = {"content": erin}
+
+    # ERAAN = What's attached (dependencies, references)
+    eraan = token.get("eraan") or token.get("dependencies") or actors or []
+    if token.get("fir_a_genesis"):
+        if isinstance(eraan, list):
+            eraan = eraan + [f"genesis: {token.get('fir_a_genesis')}"]
+
+    # EROMHEEN = Context (environment, state)
+    eromheen = token.get("eromheen") or token.get("humotica_context") or {
+        "channel": metadata.get("channel", "unknown"),
+        "state": metadata.get("state", state),
+    }
+    if isinstance(eromheen, str):
+        eromheen = {"context": eromheen}
+
+    # ERACHTER = Intent/Why
+    erachter = token.get("erachter") or token.get("humotica_intent") or token.get("reason") or ""
+
+    # State color
+    state_colors = {
+        "CREATED": "blue",
+        "DETECTED": "yellow",
+        "CLASSIFIED": "cyan",
+        "MITIGATED": "magenta",
+        "RESOLVED": "green",
+    }
+    state_color = state_colors.get(state.upper(), "white")
+
+    # Trust color
+    trust_color = "green" if trust >= 0.7 else "yellow" if trust >= 0.4 else "red"
+
+    # Build the display
+    console.print()
+    console.print("[bold blue]╔══════════════════════════════════════════════════════════════════╗[/]")
+    console.print("[bold blue]║[/]                    [bold]TIBET PROVENANCE TOKEN[/]                        [bold blue]║[/]")
+    console.print("[bold blue]╠══════════════════════════════════════════════════════════════════╣[/]")
+    console.print(f"[bold blue]║[/] TOKEN ID:  [cyan]{token_id[:50]:<50}[/] [bold blue]║[/]")
+    console.print(f"[bold blue]║[/] TYPE:      [white]{str(token_type)[:50]:<50}[/] [bold blue]║[/]")
+    console.print(f"[bold blue]║[/] ACTOR:     [white]{str(actor)[:50]:<50}[/] [bold blue]║[/]")
+    console.print(f"[bold blue]║[/] STATE:     [{state_color}]{state:<50}[/] [bold blue]║[/]")
+    console.print(f"[bold blue]║[/] TRUST:     [{trust_color}]{trust:<50}[/] [bold blue]║[/]")
+    console.print("[bold blue]╠══════════════════════════════════════════════════════════════════╣[/]")
+
+    # ERIN
+    console.print("[bold blue]║[/] [bold green]ERIN[/] (Wat zit erin?)                                           [bold blue]║[/]")
+    if isinstance(erin, dict):
+        for k, v in list(erin.items())[:5]:
+            line = f"   {k}: {v}"[:60]
+            console.print(f"[bold blue]║[/]   {line:<62} [bold blue]║[/]")
+    else:
+        line = str(erin)[:60]
+        console.print(f"[bold blue]║[/]   {line:<62} [bold blue]║[/]")
+
+    console.print("[bold blue]╠══════════════════════════════════════════════════════════════════╣[/]")
+
+    # ERAAN
+    console.print("[bold blue]║[/] [bold yellow]ERAAN[/] (Wat hangt eraan?)                                        [bold blue]║[/]")
+    if isinstance(eraan, list):
+        for item in eraan[:5]:
+            line = f"→ {item}"[:60]
+            console.print(f"[bold blue]║[/]   {line:<62} [bold blue]║[/]")
+    else:
+        line = str(eraan)[:60]
+        console.print(f"[bold blue]║[/]   {line:<62} [bold blue]║[/]")
+
+    console.print("[bold blue]╠══════════════════════════════════════════════════════════════════╣[/]")
+
+    # EROMHEEN
+    console.print("[bold blue]║[/] [bold cyan]EROMHEEN[/] (Context)                                              [bold blue]║[/]")
+    if isinstance(eromheen, dict):
+        for k, v in list(eromheen.items())[:5]:
+            line = f"   {k}: {v}"[:60]
+            console.print(f"[bold blue]║[/]   {line:<62} [bold blue]║[/]")
+    else:
+        line = str(eromheen)[:60]
+        console.print(f"[bold blue]║[/]   {line:<62} [bold blue]║[/]")
+
+    console.print("[bold blue]╠══════════════════════════════════════════════════════════════════╣[/]")
+
+    # ERACHTER
+    console.print("[bold blue]║[/] [bold magenta]ERACHTER[/] (Intent/Waarom?)                                       [bold blue]║[/]")
+    if erachter:
+        # Word wrap long intents
+        words = str(erachter).split()
+        lines = []
+        current_line = ""
+        for word in words:
+            if len(current_line) + len(word) + 1 <= 60:
+                current_line += (" " if current_line else "") + word
+            else:
+                lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+        for line in lines[:4]:
+            console.print(f"[bold blue]║[/]   {line:<62} [bold blue]║[/]")
+    else:
+        console.print(f"[bold blue]║[/]   {'(geen intent gespecificeerd)':<62} [bold blue]║[/]")
+
+    console.print("[bold blue]╠══════════════════════════════════════════════════════════════════╣[/]")
+    console.print(f"[bold blue]║[/] SIGNATURE: [dim]{signature:<52}[/] [bold blue]║[/]")
+    console.print(f"[bold blue]║[/] TIMESTAMP: [dim]{str(timestamp)[:52]:<52}[/] [bold blue]║[/]")
+    console.print("[bold blue]╚══════════════════════════════════════════════════════════════════╝[/]")
+    console.print()
+
+
+@app.command()
 def roadmap(
     path: str = typer.Argument(".", help="Path to scan"),
     output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json"),
@@ -655,6 +837,274 @@ def eu_pack(
             console.print(f"  {emoji} {name}: [{color}]{passed}/{total} ({pct}%)[/]")
 
         console.print("\n[dim]Export to SOC2: tibet-audit eu-pack --output soc2 --org 'Your Company'[/]")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COMPLIANCE CHECK (AETHER TIERS)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# AETHER Tier Definitions
+# Philosophy: Signal → Amplify → Broadcast → Resonance
+# "I exist" → "I am heard" → "I broadcast" → "I resonate with the AETHER"
+AETHER_TIERS = {
+    "signal": {
+        "name": "SIGNAL",
+        "emoji": "🟢",
+        "color": "green",
+        "price": "Free",
+        "description": "I exist.",
+        "tagline": "Basic installation",
+        "min_packages": 1,
+    },
+    "amplify": {
+        "name": "AMPLIFY",
+        "emoji": "🔵",
+        "color": "blue",
+        "price": "€99/mo",
+        "description": "I am heard.",
+        "tagline": "Monitoring active",
+        "min_packages": 3,
+    },
+    "broadcast": {
+        "name": "BROADCAST",
+        "emoji": "🟡",
+        "color": "yellow",
+        "price": "€499/mo",
+        "description": "I broadcast.",
+        "tagline": "Custom rules, streaming",
+        "min_packages": 5,
+    },
+    "resonance": {
+        "name": "RESONANCE",
+        "emoji": "🟣",
+        "color": "magenta",
+        "price": "Custom",
+        "description": "I resonate with the AETHER.",
+        "tagline": "War Room, Zero-trust",
+        "min_packages": 8,
+    },
+}
+
+# Package categories for compliance calculation
+HUMOTICA_PACKAGES = {
+    # Core audit (essential)
+    "tibet-audit": {"weight": 20, "category": "audit", "tier": "signal"},
+    "tibet-chip": {"weight": 15, "category": "audit", "tier": "signal"},
+    "tibet-vault": {"weight": 15, "category": "audit", "tier": "amplify"},
+
+    # MCP Servers (integration)
+    "mcp-server-tibet": {"weight": 10, "category": "mcp", "tier": "signal"},
+    "mcp-server-rabel": {"weight": 10, "category": "mcp", "tier": "amplify"},
+    "mcp-server-sensory": {"weight": 8, "category": "mcp", "tier": "amplify"},
+    "mcp-server-aidrac": {"weight": 8, "category": "mcp", "tier": "broadcast"},
+    "mcp-server-inject-bender": {"weight": 5, "category": "mcp", "tier": "broadcast"},
+    "mcp-server-ollama-bridge": {"weight": 5, "category": "mcp", "tier": "broadcast"},
+    "mcp-server-gemini-bridge": {"weight": 5, "category": "mcp", "tier": "broadcast"},
+    "mcp-server-openai-bridge": {"weight": 5, "category": "mcp", "tier": "broadcast"},
+
+    # Protocols
+    "sema-protocol": {"weight": 10, "category": "protocol", "tier": "amplify"},
+    "reflux-protocol": {"weight": 8, "category": "protocol", "tier": "broadcast"},
+    "ainternet": {"weight": 12, "category": "protocol", "tier": "amplify"},
+
+    # Tools & CLI
+    "idd-cli": {"weight": 8, "category": "tools", "tier": "amplify"},
+    "kit-pm": {"weight": 5, "category": "tools", "tier": "signal"},
+    "oomllama": {"weight": 10, "category": "llm", "tier": "amplify"},
+    "humotica": {"weight": 5, "category": "core", "tier": "signal"},
+
+    # Advanced
+    "sensory": {"weight": 8, "category": "advanced", "tier": "broadcast"},
+    "aidrac": {"weight": 8, "category": "advanced", "tier": "broadcast"},
+    "aindex-diy": {"weight": 5, "category": "tools", "tier": "amplify"},
+    "ai-network": {"weight": 8, "category": "protocol", "tier": "broadcast"},
+    "ipoll": {"weight": 8, "category": "protocol", "tier": "amplify"},
+}
+
+# Zenodo papers for authority
+ZENODO_PAPERS = [
+    {"id": "18341384", "title": "TIBET: Transparency & Intent Protocol"},
+    {"id": "18340471", "title": "SNAFT: Security That Feels Like Safety"},
+    {"id": "18208218", "title": "JIS: Just-In-Time Security Routing"},
+    {"id": "17762391", "title": "AETHER: Semantic Search Architecture"},
+    {"id": "17759713", "title": "HumoticaOS: AI Governance Framework"},
+]
+
+
+def _detect_installed_packages() -> dict:
+    """Detect which Humotica packages are installed."""
+    import importlib.util
+    import subprocess
+
+    installed = {}
+
+    # Try pip list first (most reliable)
+    try:
+        result = subprocess.run(
+            ["pip", "list", "--format=json"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            import json as json_mod
+            pip_packages = {p["name"].lower(): p["version"] for p in json_mod.loads(result.stdout)}
+
+            for pkg_name, pkg_info in HUMOTICA_PACKAGES.items():
+                # Check both with and without hyphens/underscores
+                check_names = [
+                    pkg_name.lower(),
+                    pkg_name.lower().replace("-", "_"),
+                    pkg_name.lower().replace("_", "-"),
+                ]
+                for check_name in check_names:
+                    if check_name in pip_packages:
+                        installed[pkg_name] = {
+                            "version": pip_packages[check_name],
+                            **pkg_info
+                        }
+                        break
+    except Exception:
+        # Fallback: try importlib
+        for pkg_name, pkg_info in HUMOTICA_PACKAGES.items():
+            module_name = pkg_name.replace("-", "_")
+            try:
+                spec = importlib.util.find_spec(module_name)
+                if spec is not None:
+                    installed[pkg_name] = {"version": "unknown", **pkg_info}
+            except (ImportError, ModuleNotFoundError):
+                pass
+
+    return installed
+
+
+def _calculate_compliance(installed: dict) -> tuple:
+    """Calculate compliance percentage and tier."""
+    if not installed:
+        return 0, "signal"
+
+    # Calculate weighted score
+    total_weight = sum(pkg["weight"] for pkg in HUMOTICA_PACKAGES.values())
+    installed_weight = sum(pkg["weight"] for pkg in installed.values())
+    compliance_pct = int((installed_weight / total_weight) * 100)
+
+    # Determine tier based on packages installed
+    pkg_count = len(installed)
+
+    if pkg_count >= 8:
+        tier = "resonance"
+    elif pkg_count >= 5:
+        tier = "broadcast"
+    elif pkg_count >= 3:
+        tier = "amplify"
+    else:
+        tier = "signal"
+
+    return compliance_pct, tier
+
+
+@app.command("check")
+def check_compliance(
+    output: str = typer.Option("terminal", "--output", "-o", help="Output: terminal, json"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed component status"),
+):
+    """
+    Check your AETHER compliance level and tier.
+
+    Analyzes your local environment for:
+    - JIS Identity (Level 1)
+    - TIBET Provenance (Level 2)
+    - Genesis Tunnel (Level 3)
+    - War Room Access (Level 4)
+
+    Examples:
+        tibet-audit check
+        tibet-audit check --verbose
+        tibet-audit check --output json
+    """
+    # Detect installed packages
+    installed = _detect_installed_packages()
+    compliance_pct, current_tier = _calculate_compliance(installed)
+
+    tier_info = AETHER_TIERS[current_tier]
+
+    # Determine component status
+    has_jis = any(p in installed for p in ["tibet-audit", "tibet-chip", "idd-cli"])
+    has_tibet = any(p in installed for p in ["tibet-vault", "mcp-server-tibet", "tibet-audit"])
+    has_genesis = any(p in installed for p in ["mcp-server-rabel", "ainternet", "reflux-protocol"])
+    has_warroom = len(installed) >= 8
+
+    if output.lower() == "json":
+        import json as json_mod
+        result = {
+            "tier": current_tier,
+            "tier_name": tier_info["name"],
+            "compliance_percentage": compliance_pct,
+            "components": {
+                "jis_identity": has_jis,
+                "tibet_provenance": has_tibet,
+                "genesis_tunnel": has_genesis,
+                "war_room": has_warroom,
+            },
+            "installed_packages": list(installed.keys()),
+            "package_count": len(installed),
+            "upgrade_url": "https://humotica.com/tiers",
+            "contact": "info@humotica.com",
+            "zenodo_papers": [f"https://zenodo.org/records/{p['id']}" for p in ZENODO_PAPERS],
+        }
+        console.print(json_mod.dumps(result, indent=2))
+        return
+
+    # Clean CLI output - Jasper's vision
+    console.print()
+    console.print("[dim]> Analyzing Local Environment...[/]")
+    console.print()
+
+    # Component checks
+    jis_status = "[green]Found[/] (Level 1 ✅)" if has_jis else "[red]Missing[/] (Level 1 ❌)"
+    tibet_status = "[green]Active[/] (Level 2 ✅)" if has_tibet else "[red]Inactive[/] (Level 2 ❌)"
+    genesis_status = "[green]Connected[/] (Level 3 ✅)" if has_genesis else "[yellow]Inactive[/] (Level 3 ❌)"
+    warroom_status = "[green]Access Granted[/] (Level 4 ✅)" if has_warroom else "[dim]Locked[/] (Level 4 🔒)"
+
+    console.print(f"[dim]>[/] JIS Identity:      {jis_status}")
+    console.print(f"[dim]>[/] TIBET Provenance:  {tibet_status}")
+    console.print(f"[dim]>[/] Genesis Tunnel:    {genesis_status}")
+    console.print(f"[dim]>[/] War Room:          {warroom_status}")
+    console.print()
+
+    # Status with poetic quote
+    tier_quotes = {
+        "signal": "You exist. But does anyone know?",
+        "amplify": "You are heard. But are you broadcasting truth?",
+        "broadcast": "You broadcast. But do you resonate?",
+        "resonance": "You resonate with the AETHER. Welcome home.",
+    }
+
+    console.print(f"[bold]>>> YOUR STATUS: [{tier_info['color']}]{tier_info['emoji']} {tier_info['name']}[/]")
+    console.print(f"[italic]>>> \"{tier_quotes[current_tier]}\"[/]")
+
+    # Upgrade suggestion
+    tier_order = ["signal", "amplify", "broadcast", "resonance"]
+    current_idx = tier_order.index(current_tier)
+
+    if current_idx < 3:
+        next_tier = tier_order[current_idx + 1]
+        console.print(f"[dim]>>> Upgrade to {next_tier.upper()}: $ pip install tibet-vault ainternet[/]")
+    console.print()
+
+    # Verbose: show installed packages
+    if verbose:
+        console.print("[dim]─────────────────────────────────────────[/]")
+        console.print(f"[dim]Packages: {len(installed)} installed ({compliance_pct}% coverage)[/]")
+        for pkg_name, pkg_info in installed.items():
+            console.print(f"[dim]  • {pkg_name} ({pkg_info['version']})[/]")
+        console.print()
+
+    # Links
+    console.print("[dim]📚 Research: https://zenodo.org/records/18341384[/]")
+    console.print("[dim]🌐 Tiers:    https://humotica.com/tiers[/]")
+    console.print("[dim]📞 Contact:  info@humotica.com[/]")
+    console.print()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
